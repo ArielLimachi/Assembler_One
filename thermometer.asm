@@ -11,34 +11,53 @@
  
 ; if closed, the thermometer window can be re-opened from emulator's "virtual devices" menu.
  
- 
 #make_bin#
- 
+
 name "thermo"
- 
-; set data segment to code segment:
-mov ax, cs
-mov ds, ax
- 
+
+TEMP_LOW     equ 60
+TEMP_HIGH    equ 80
+PORT_THERMO  equ 125
+PORT_HEATER  equ 127
+ERROR_FLAG   equ 1;
+
 start:
+    ; Read temperature from thermometer
+    in al, PORT_THERMO
+    
+    ; Check for I/O error (assuming failed read sets Carry flag)
+    jc error_handler
+    
+    ; Check for valid temperature range (0-127 is a common assumption)
+    cmp al, 0
+    jl error_handler
+    cmp al, 127
+    jg error_handler
+    
+    ; Compare temperature
+    cmp al, TEMP_LOW
+    jl  turnHeaterOn
+
+    cmp al, TEMP_HIGH
+    jle turnHeaterOff
+    jmp turnHeaterOn  ; If temperature exceeds 80°, turn on heater
+
+turnHeaterOn:
+    mov al, 1
+    out PORT_HEATER, al   ; Turn heater on
+    jmp continue
+
  
-in al, 125
+turnHeaterOff:
+    mov al, 0
+    out PORT_HEATER, al   ; Turn heater off
  
-cmp al, 60
-jl  low
- 
-cmp al, 80
-jle  ok
-jg   high
- 
-low:
-mov al, 1
-out 127, al   ; turn heater "on".
-jmp ok
- 
-high:
-mov al, 0
-out 127, al   ; turn heater "off".
- 
-ok:
-jmp start   ; endless loop.
+
+continue:
+    jmp start   ; Endless loop
+
+
+error_handler:
+    mov al, ERROR_FLAG  ; Error flag
+    jmp continue
+
