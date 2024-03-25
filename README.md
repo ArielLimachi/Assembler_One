@@ -14,6 +14,7 @@ to the user to move it yourself or to do it automatically, we take into account 
 asks the user which side they should move:
 
 a -> Right
+
 b -> Left
 
 Where you can control which side the motor can move, taking into account that port 21 worked 09h
